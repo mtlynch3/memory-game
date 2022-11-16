@@ -1,37 +1,76 @@
 import './App.css';
 import Card from './components/Card'
 
-import React, { useState } from 'react';
-
+import React, { useEffect, useState } from 'react';
+const cardImages = [
+    {src:"A", matched:false}, 
+    {src:"B", matched:false}, 
+    {src:"C", matched:false}, 
+    {src:"D", matched:false}
+  ];
 
 function App() {
-  const [countFlipped, setCountFlipped] = useState(0);
-  const [choices, setChoices] = useState([]);
-  const [numMatched, setNumMatched] = useState(0);
+  const [cards, setCards] = useState([]);
+  //const [turns, setTurns] = useState(0);
+  const [choiceOne, setChoiceOne] = useState(null);
+  const [choiceTwo, setChoiceTwo] = useState(null);
+  const [disabled, setDisabled] = useState(false);
 
-
-  const handleCountFlipped = (isFlipped) => (isFlipped ? setCountFlipped(countFlipped-1) : setCountFlipped(countFlipped+1));
-
-  const handleChoices = (chosenCardText) => (setChoices([...choices, chosenCardText]));
-
-  const cardValues = [{id:1,src:"img1"}, {id:2,src:"img2"}, {id:3,src:"img1"}, {id:4,src:"img2"}];
-  console.log(countFlipped, choices);
-
-  if (countFlipped === 2) {
-    if (choices[0].src === choices[1].src){
-      setNumMatched(numMatched+1);
-    }
-    setChoices([]);
-    setCountFlipped(0);
+  const shuffleCards = () => {
+    const shuffledCards = [...cardImages, ...cardImages]
+      .sort(() => Math.random() - 0.5)
+      .map(card => ({...card, id: Math.random()}));
+    setCards(shuffledCards);
+    resetTurn();
+    //setTurns(0);
   }
+
+  const handleChoice = card => {
+    choiceOne ? setChoiceTwo(card) : setChoiceOne(card);
+  }
+
+  useEffect(() => {
+    if(choiceOne&&choiceTwo) {
+      setDisabled(true);
+      if(choiceOne.src===choiceTwo.src){
+        setCards(prevCards => {
+          return prevCards.map (card => {
+            if (card.src === choiceOne.src) {
+              return {...card, matched:true};
+            } else {
+              return card;
+            }
+          })
+        })
+        resetTurn()
+      } else {
+        setTimeout(() => resetTurn(), 1000)
+
+      }
+    }
+
+  }, [choiceOne, choiceTwo]) 
+
+  const resetTurn = () => {
+    setChoiceOne(null)
+    setChoiceTwo(null)
+    //setTurns(prevTurns => prevTurns + 1)
+    setDisabled(false);
+  }
+  //console.log(cards);
   return (
     <div className="App">
-      {cardValues.map(item=>(
-        <Card key={item.id} cardText={item.src} 
-              handleCountFlipped={handleCountFlipped}
-              handleChoices={handleChoices}
-              /> 
-      ))}
+      <h1>Memory Game</h1>
+      <button onClick={shuffleCards}>New Game</button>
+      <div className='card-grid'>
+        {cards.map(card => (
+          <Card key={card.id} card={card}
+              handleChoice={handleChoice}
+              flipped={card===choiceOne || card===choiceTwo || card.matched}
+              disabled={disabled}
+          />
+        ))}
+      </div>
     </div>
   );
 }
